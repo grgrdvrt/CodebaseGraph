@@ -19,7 +19,7 @@ Generate the dot file:
 node js/index.js /path/to/my/js/codebase/ -o /path/to/result.dot
 ```
 
-Export to as pdf using dot:
+Export as pdf using dot:
 ```
 dot -Tpdf /path/to/result.dot -o /path/to/result.pdf
 ```
