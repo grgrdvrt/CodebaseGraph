@@ -1,6 +1,8 @@
-const process = require('process');
-const fs = require('fs');
-const path = require('path');
+const process = require("process");
+const fs = require("fs");
+const path = require("path");
+
+const commandLineArgs = require("command-line-args");
 
 const fileSystem = require("./fileSystem");
 const javascript = require("./javascript");
@@ -11,7 +13,7 @@ const rendering = require("./rendering");
 
 function retrieveJsContent(filesHierachy){
   traversing.traverseFiles(filesHierachy, ".js", file => {
-    const data = fs.readFileSync(file.absolutePath, 'utf8');
+    const data = fs.readFileSync(file.absolutePath, "utf8");
     file.content = javascript.getFileContent(file, data);
   });
 }
@@ -61,20 +63,27 @@ function resolveImports(filesHierachy){
 }
 
 
-const projectRoot = process.argv[2];
+
+const optionDefinitions = [
+  { name: "src", type: String, defaultOption: true },
+  { name: "output", alias:"o", type: String},
+];
+
+const options = commandLineArgs(optionDefinitions);
 
 
-let filesHierachy = fileSystem.getFileHierarchy(projectRoot);
+
+let filesHierachy = fileSystem.getFileHierarchy(options.src);
 retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
 let graph = rendering.buildGraph(filesHierachy);
 
-fs.writeFile("./build/result.dot", graph.toString(), function(err) {
+fs.writeFile(options.output, graph.toString(), function(err) {
   if(err) {
     return console.log(err);
   }
 
-  console.log("The file was saved!");
+  console.log(`The file was saved in ${options.output}`);
 });
 
 
