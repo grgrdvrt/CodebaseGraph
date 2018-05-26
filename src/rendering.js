@@ -1,5 +1,5 @@
 const traversing = require("./traversing");
-const dot = require('./dot');
+const dot = require('graphviz-doc-builder');
 const path = require('path');
 
 function getDependencies(data){

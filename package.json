@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "command-line-args": "^5.0.2",
-    "esprima": "^4.0.0"
+    "esprima": "^4.0.0",
+    "graphviz-doc-builder": "^0.1.0"
   }
 }
