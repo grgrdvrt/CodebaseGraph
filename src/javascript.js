@@ -47,6 +47,7 @@ function getFileContent(fileInfos, src){
   let body;
   try{
     body = esprima.parseModule(src).body;
+    explore(body);
   }
   catch(e){
     console.log(src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"));
@@ -54,16 +55,36 @@ function getFileContent(fileInfos, src){
     throw new Error(e);
   }
   const classes = parseTypes(body, 'ClassDeclaration', parseClass);
-  const imports = parseTypes(body, 'ImportDeclaration', i => parseImport(i, fileInfos.path))
+  const imports = parseTypes(body, 'ImportDeclaration', parseImport)
         .reduce((a, i) => a.concat(i), []);
+  const requires = parseTypes(body, 'VariableDeclaration', parseRequire)
+    .reduce((a, i) => a.concat(i), []);
   return jsFileContent(
-    imports,
+    [...imports, ...requires],
     classes,
   );
 }
 
+function explore(body){
+}
 
-function parseImport(importItem, filePath){
+function parseRequire(variableDeclaration){
+
+  return variableDeclaration.declarations.map(declaration => {
+    if(declaration.init && declaration.init.callee && declaration.init.callee.name === "require"){
+      return jsImport(
+        declaration.id.name,
+        declaration.init.arguments[0].value
+      );
+    }
+    else{
+      return undefined;
+    }
+  }).filter(i => i !== undefined);
+}
+
+
+function parseImport(importItem){
   return importItem.specifiers.map(specifier => {
     return jsImport(importItem.source.value, specifier.local.name);
   });

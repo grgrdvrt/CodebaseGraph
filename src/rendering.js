@@ -50,15 +50,22 @@ function buildGraph(data){
           dependenciesSubgraph,
           filesSubgraph,
           ...buildLinks(data, dependencies),
-          dot.edge(
-            dependenciesSubgraph.getFirstNode().id,
-            filesSubgraph.getFirstNode().id
-          ).setAttributes({
-            ltail:dependenciesSubgraph.id,
-            lhead:filesSubgraph.id,
-            style:"invis"
-          })
         );
+
+  let firstDependency = dependenciesSubgraph.getFirstNode();
+  let firstFile = filesSubgraph.getFirstNode();
+  if(firstDependency !== null && firstFile !== null){
+    graph.add(
+      dot.edge(
+        firstDependency.id,
+        firstFile.id
+      ).setAttributes({
+        ltail:dependenciesSubgraph.id,
+        lhead:filesSubgraph.id,
+        style:"invis"
+      })
+    );
+  }
 
   return graph;
 }
