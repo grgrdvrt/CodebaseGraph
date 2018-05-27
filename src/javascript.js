@@ -70,17 +70,27 @@ function explore(body){
 
 function parseRequire(variableDeclaration){
 
-  return variableDeclaration.declarations.map(declaration => {
+  let result = [];
+  variableDeclaration.declarations.forEach(declaration => {
     if(declaration.init && declaration.init.callee && declaration.init.callee.name === "require"){
-      return jsImport(
-        declaration.id.name,
-        declaration.init.arguments[0].value
-      );
+      if(declaration.id.type === "ObjectPattern"){
+        declaration.id.properties.forEach(prop => {
+          jsImport(
+            declaration.init.arguments[0].value,
+            prop.key.name
+          );
+        });
+      }
+      else {
+        result.push(
+          jsImport(
+            declaration.init.arguments[0].value,
+            declaration.id.name
+          ));
+      }
     }
-    else{
-      return undefined;
-    }
-  }).filter(i => i !== undefined);
+  });
+  return result.filter(i => i !== undefined);
 }
 
 

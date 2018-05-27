@@ -1,91 +1,53 @@
-const process = require("process");
-const fs = require("fs");
-const path = require("path");
 
-const commandLineArgs = require("command-line-args");
-
-const fileSystem = require("./fileSystem");
-const javascript = require("./javascript");
-const traversing = require("./traversing");
-const rendering = require("./rendering");
+const electron = require('electron');
 
 
 
-function retrieveJsContent(filesHierachy){
-  traversing.traverseFiles(filesHierachy, ".js", file => {
-    const data = fs.readFileSync(file.absolutePath, "utf8");
-    file.content = javascript.getFileContent(file, data);
+
+const {app, BrowserWindow} = require('electron');
+
+// Gardez une reference globale de l'objet window, si vous ne le faites pas, la fenetre sera
+// fermee automatiquement quand l'objet JavaScript sera garbage collected.
+let win;
+
+function createWindow () {
+  // Créer le browser window.
+  win = new BrowserWindow({width: 800, height: 600});
+
+  // et charge le index.html de l'application.
+  win.loadFile('src/index.html');
+
+  // Ouvre les DevTools.
+  win.webContents.openDevTools();
+
+  // Émit lorsque la fenêtre est fermée.
+  win.on('closed', () => {
+    // Dé-référence l'objet window , normalement, vous stockeriez les fenêtres
+    // dans un tableau si votre application supporte le multi-fenêtre. C'est le moment
+    // où vous devez supprimer l'élément correspondant.
+    win = null;
   });
-}
+};
 
-function resolveImports(filesHierachy){
+// Cette méthode sera appelée quant Electron aura fini
+// de s'initialiser et sera prêt à créer des fenêtres de navigation.
+// Certaines APIs peuvent être utilisées uniquement quant cet événement est émit.
+app.on('ready', createWindow);
 
-  traversing.traverseFiles(filesHierachy, ".js", file => {
-
-    const localDependencies = new Set();
-    const globalDependencies = new Set();
-
-    file.content.imports.forEach(importInfos => {
-
-      const isRelative = importInfos.modulePath.indexOf(".") === 0;
-      let modulePath;
-      if(isRelative){
-        modulePath = path.join(path.parse(file.path).dir, importInfos.modulePath);
-      }
-      else {
-        modulePath = importInfos.modulePath;
-      }
-
-
-      let importedFile = traversing.find(filesHierachy, modulePath);
-      if(importedFile === null){
-        importedFile = traversing.find(filesHierachy, modulePath + ".js");
-      }
-      if(importedFile === null){
-        importedFile = traversing.find(filesHierachy, path.join(modulePath, "index.js"));
-      }
-
-      if(importedFile === null){
-        globalDependencies.add(modulePath);
-      }
-      else {
-        localDependencies.add(importedFile.path);
-      }
-
-      return modulePath;
-
-    });
-
-    file.localDependencies = Array.from(localDependencies);
-    file.globalDependencies = Array.from(globalDependencies);
-
-  });
-}
-
-
-
-const optionDefinitions = [
-  { name: "src", type: String, defaultOption: true },
-  { name: "output", alias:"o", type: String},
-];
-
-const options = commandLineArgs(optionDefinitions);
-
-
-
-let filesHierachy = fileSystem.getFileHierarchy(options.src);
-retrieveJsContent(filesHierachy);
-resolveImports(filesHierachy);
-let graph = rendering.buildGraph(filesHierachy);
-
-fs.writeFile(options.output, graph.toString(), function(err) {
-  if(err) {
-    return console.log(err);
+// Quitte l'application quand toutes les fenêtres sont fermées.
+app.on('window-all-closed', () => {
+  // Sur macOS, il est commun pour une application et leur barre de menu
+  // de rester active tant que l'utilisateur ne quitte pas explicitement avec Cmd + Q
+  if (process.platform !== 'darwin') {
+    app.quit();
   }
-
-  console.log(`The file was saved in ${options.output}`);
 });
 
-
-
+app.on('activate', () => {
+  // Sur macOS, il est commun de re-créer une fenêtre de l'application quand
+  // l'icône du dock est cliquée et qu'il n'y a pas d'autres fenêtres d'ouvertes.
+  if (win === null) {
+    createWindow();
+  }
+});
 
