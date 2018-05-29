@@ -39,15 +39,14 @@ function parseTypes(items, type, parseFunction){
 }
 
 function getFileContent(fileInfos, src){
-  src = src.replace(/static \w* = .*;?\n/g, "");
-  src = src.replace(/\.\.\./g, "x:");
-  src = src.replace(/@autobind/g, "");
-  src = src.replace(/export \w* from .*\n/g, "");
-  src = src.replace(/export default class (\w*)/g, "export default $1;\nclass $1");
-  let body;
+  src = src.replace(/static \w* = .*;?\n/g, "")
+    .replace(/\.\.\./g, "x:")
+    .replace(/@?autobind/g, "")
+    .replace(/^export default class (\w*)/g, "export default $1;\nclass $1")
+    .replace(/^export \w* from .*\n/g, "");
+  var body;
   try{
     body = esprima.parseModule(src).body;
-    explore(body);
   }
   catch(e){
     console.log(src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"));
@@ -65,8 +64,6 @@ function getFileContent(fileInfos, src){
   );
 }
 
-function explore(body){
-}
 
 function parseRequire(variableDeclaration){
 
