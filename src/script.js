@@ -70,7 +70,8 @@ function resolveImports(filesHierachy){
 // const options = commandLineArgs(optionDefinitions);
 
 const options = {
-  src:"src",
+  src:"/Users/gregoire/Documents/projets/HAVAS_PARIS/veolia-parcours-de-leau/src/js",
+  // src:"src",
   output:"build/result2.dot"
 };
 
@@ -81,23 +82,51 @@ resolveImports(filesHierachy);
 let graph = rendering.buildGraph(filesHierachy);
 
 
-const Viz = require('viz.js');
-const { Module, render } = require('viz.js/full.render.js');
 
-let viz = new Viz({ Module, render });
 
-viz.renderString(graph.toString())
-  .then(result => {
-    document.body.innerHTML = (result);
-    // console.log(result);
-  }).catch((error) => {
-    console.log(error)
+
+const graphlibDot = require('graphlib-dot');
+const d3 = require('d3');
+const dagreD3 = require('dagre-d3');
+var exec = require('child_process').exec;
+
+
+
+// Set up zoom support
+var svg = d3.select("svg"),
+    inner = d3.select("svg g"),
+    zoom = d3.zoom().on("zoom", function() {
+      inner.attr("transform", d3.event.transform);
+    });
+svg.call(zoom);
+
+// Create and configure the renderer
+var render = dagreD3.render();
+
+var str = graph.toString();
+console.log(str);
+var g = graphlibDot.read(str);
+
+// Set margins, if not present
+if (!g.graph().hasOwnProperty("marginx") &&
+    !g.graph().hasOwnProperty("marginy")) {
+  g.graph().marginx = 20;
+  g.graph().marginy = 20;
+}
+
+g.graph().transition = function(selection) {
+  return selection.transition().duration(500);
+};
+
+// Render the graph into svg g
+d3.select("svg g").call(render, g);
+
+
+let nodes = document.querySelectorAll(".node");
+
+nodes.forEach(node => {
+  node.addEventListener("click", e => {
+    console.log(e.currentTarget);
+    exec(`open ${options.src}/App.js +100`);
   });
-
-// fs.writeFile(options.output, graph.toString(), function(err) {
-//   if(err) {
-//     return console.log(err);
-//   }
-
-//   console.log(`The file was saved in ${options.output}`);
-// });
+});

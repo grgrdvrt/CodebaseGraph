@@ -42,8 +42,8 @@ function getFileContent(fileInfos, src){
   src = src.replace(/static \w* = .*;?\n/g, "")
     .replace(/\.\.\./g, "x:")
     .replace(/@?autobind/g, "")
-    .replace(/^export default class (\w*)/g, "export default $1;\nclass $1")
-    .replace(/^export \w* from .*\n/g, "");
+    .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
+    .replace(/export \w* from .*\n/g, "");
   var body;
   try{
     body = esprima.parseModule(src).body;

@@ -7,7 +7,9 @@
   "license": "ISC",
   "dependencies": {
     "command-line-args": "^5.0.2",
+    "dagre-d3": "^0.6.1",
     "esprima": "^4.0.0",
+    "graphlib-dot": "^0.6.2",
     "graphviz-doc-builder": "^0.1.0",
     "viz.js": "^2.0.0"
   },

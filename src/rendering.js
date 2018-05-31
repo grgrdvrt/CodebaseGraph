@@ -116,7 +116,7 @@ function fileToDot(data){
   return dot.node(path.basename(data.path), data.path)
     .setAttributes({
       style:"solid",
-      shape:"note",
+      shape:"rect",
       margin : 0.2
     });
 }
@@ -132,7 +132,7 @@ function dirToDot(data){
       isCluster:true
     })
     .setAttributes({
-      shape:"folder",
+      shape:"rect",
       fontsize:30,
       labeljust:"l"
     }).add(
@@ -188,7 +188,7 @@ function dependenciesToDot(dependencies){
     .add(
       ...(dependencies.map(dep => {
         return dot.node(dep, dep)
-          .setAttributes({shape:"rectangle"});
+          .setAttributes({shape:"rect"});
       }))
     );
 }
