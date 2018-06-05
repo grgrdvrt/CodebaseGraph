@@ -7,7 +7,8 @@ const commandLineArgs = require("command-line-args");
 const fileSystem = require("./fileSystem");
 const javascript = require("./javascript");
 const traversing = require("./traversing");
-const rendering = require("./rendering");
+const dom = require("./dom");
+const layout = require("./layout");
 
 function retrieveJsContent(filesHierachy){
   traversing.traverseFiles(filesHierachy, ".js", file => {
@@ -79,54 +80,12 @@ const options = {
 let filesHierachy = fileSystem.getFileHierarchy(options.src);
 retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
-let graph = rendering.buildGraph(filesHierachy);
 
 
+dom.createDomNodes(filesHierachy);
+let container = document.querySelector(".nodes");
+container.appendChild(filesHierachy.node);
+
+let graph = layout.layoutGraph(filesHierachy);
 
 
-
-const graphlibDot = require('graphlib-dot');
-const d3 = require('d3');
-const dagreD3 = require('dagre-d3');
-var exec = require('child_process').exec;
-
-
-
-// Set up zoom support
-var svg = d3.select("svg"),
-    inner = d3.select("svg g"),
-    zoom = d3.zoom().on("zoom", function() {
-      inner.attr("transform", d3.event.transform);
-    });
-svg.call(zoom);
-
-// Create and configure the renderer
-var render = dagreD3.render();
-
-var str = graph.toString();
-console.log(str);
-var g = graphlibDot.read(str);
-
-// Set margins, if not present
-if (!g.graph().hasOwnProperty("marginx") &&
-    !g.graph().hasOwnProperty("marginy")) {
-  g.graph().marginx = 20;
-  g.graph().marginy = 20;
-}
-
-g.graph().transition = function(selection) {
-  return selection.transition().duration(500);
-};
-
-// Render the graph into svg g
-d3.select("svg g").call(render, g);
-
-
-let nodes = document.querySelectorAll(".node");
-
-nodes.forEach(node => {
-  node.addEventListener("click", e => {
-    console.log(e.currentTarget);
-    exec(`open ${options.src}/App.js +100`);
-  });
-});
