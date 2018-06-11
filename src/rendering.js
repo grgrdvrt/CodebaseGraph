@@ -117,7 +117,7 @@ function fileToDot(data){
     .setAttributes({
       style:"solid",
       shape:"note",
-      margin : 0.2
+      margin : 0.5
     });
 }
 
@@ -172,7 +172,7 @@ function jsFileToDot(data){
       style:"filled,solid",
       color:hsv,
       fillcolor:data.color,
-      margin : 0.2
+      margin : 0.5
     });
 }
 

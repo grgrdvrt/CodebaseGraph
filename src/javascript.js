@@ -40,10 +40,11 @@ function parseTypes(items, type, parseFunction){
 
 function getFileContent(fileInfos, src){
   src = src.replace(/static \w* = .*;?\n/g, "")
-    .replace(/\.\.\./g, "x:")
+    .replace(/\[[^{]*\.\.\./g, "")
+    .replace(/{[^[]\.\.\./g, "x:")
     .replace(/@?autobind/g, "")
-    .replace(/^export default class (\w*)/g, "export default $1;\nclass $1")
-    .replace(/^export \w* from .*\n/g, "");
+    .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
+    .replace(/export \w* from .*\n/g, "");
   var body;
   try{
     body = esprima.parseModule(src).body;
@@ -51,7 +52,8 @@ function getFileContent(fileInfos, src){
   catch(e){
     console.log(src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"));
     console.log(fileInfos.path);
-    throw new Error(e);
+    console.error(e);
+    return jsFileContent([],[]);
   }
   const classes = parseTypes(body, 'ClassDeclaration', parseClass);
   const imports = parseTypes(body, 'ImportDeclaration', parseImport)

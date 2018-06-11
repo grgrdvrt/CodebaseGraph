@@ -70,7 +70,9 @@ function resolveImports(filesHierachy){
 // const options = commandLineArgs(optionDefinitions);
 
 const options = {
-  src:"src",
+  // src:"src",
+  // src:"/Users/gregoire/Documents/projets/HAVAS_PARIS/veolia-parcours-de-leau/src/js",
+  src:"/Users/gregoire/Documents/projets/sobieski/src/js",
   output:"build/result2.dot"
 };
 
@@ -81,18 +83,35 @@ resolveImports(filesHierachy);
 let graph = rendering.buildGraph(filesHierachy);
 
 
-const Viz = require('viz.js');
 const { Module, render } = require('viz.js/full.render.js');
 
-let viz = new Viz({ Module, render });
 
-viz.renderString(graph.toString())
-  .then(result => {
-    document.body.innerHTML = (result);
-    // console.log(result);
-  }).catch((error) => {
-    console.log(error)
+var cp = require('child_process');
+var child = cp.spawn("dot", ['-Tsvg']);
+
+child.stdin.write(graph.toString());
+
+let result = "";
+child.stdout.on('finish', function (data) {
+  initDom(result);
+});
+child.stdout.on('data', function (data) {
+  result += data;
+});
+
+child.stdin.end();
+
+
+function initDom(contentStr){
+  document.body.innerHTML = contentStr;
+  let nodes = {};
+  document.querySelectorAll(".node title").forEach(title => {
+    nodes[title.textContent] = title.parentNode;
   });
+  console.log(nodes);
+
+  document.addEventListener("click", e => console.log(e.target));
+}
 
 // fs.writeFile(options.output, graph.toString(), function(err) {
 //   if(err) {
