@@ -70,9 +70,7 @@ function resolveImports(filesHierachy){
 // const options = commandLineArgs(optionDefinitions);
 
 const options = {
-  // src:"src",
-  // src:"/Users/gregoire/Documents/projets/HAVAS_PARIS/veolia-parcours-de-leau/src/js",
-  src:"/Users/gregoire/Documents/projets/sobieski/src/js",
+  src:"src",
   output:"build/result2.dot"
 };
 
@@ -82,8 +80,6 @@ retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
 let graph = rendering.buildGraph(filesHierachy);
 
-
-const { Module, render } = require('viz.js/full.render.js');
 
 
 var cp = require('child_process');
@@ -101,16 +97,20 @@ child.stdout.on('data', function (data) {
 
 child.stdin.end();
 
+let graphDom = document.createElement("div");
+graphDom.classList.add("graphDom");
 
 function initDom(contentStr){
-  document.body.innerHTML = contentStr;
+  document.body.appendChild(graphDom);
+  graphDom.innerHTML = contentStr;
   let nodes = {};
   document.querySelectorAll(".node title").forEach(title => {
     nodes[title.textContent] = title.parentNode;
   });
   console.log(nodes);
 
-  document.addEventListener("click", e => console.log(e.target));
+  // document.addEventListener("click", e => console.log(e.target));
+  initMouse();
 }
 
 // fs.writeFile(options.output, graph.toString(), function(err) {
@@ -120,3 +120,54 @@ function initDom(contentStr){
 
 //   console.log(`The file was saved in ${options.output}`);
 // });
+
+let posInit = {x:0, y:0};
+let graphPos = {x:0, y:0};
+let graphPosInit = {x:0, y:0};
+let scale = 1;
+function initMouse(){
+  document.addEventListener("mousedown", startDrag);
+  document.addEventListener("mousewheel", zoom);
+}
+
+function zoom(e){
+  scale += 0.01 * e.deltaY;
+  scale = Math.max(0.05, Math.min(1, scale));
+  graphDom.style.transform = `scale(${scale})`;
+}
+
+function startDrag(e){
+  posInit.x = e.clientX;
+  posInit.y = e.clientY;
+  graphPosInit.x = graphPos.x;
+  graphPosInit.y = graphPos.y;
+  document.addEventListener("mousemove", drag);
+  document.addEventListener("mouseup", stopDrag);
+}
+
+function stopDrag(e){
+  document.removeEventListener("mousemove", drag);
+  document.removeEventListener("mouseup", stopDrag);
+  let dx = e.clientX - posInit.x;
+  let dy = e.clientY - posInit.y;
+  setGraphPos(
+    graphPosInit.x + dx,
+    graphPosInit.y + dy
+  );
+}
+
+function setGraphPos(x, y){
+  graphPos.x = x;
+  graphPos.y = y;
+  graphDom.style.left = x + "px";
+  graphDom.style.top = y + "px";
+}
+
+function drag(e){
+  let dx = e.clientX - posInit.x;
+  let dy = e.clientY - posInit.y;
+  setGraphPos(
+    graphPosInit.x + dx,
+    graphPosInit.y + dy
+  );
+}
