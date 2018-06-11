@@ -9,10 +9,9 @@
     "command-line-args": "^5.0.2",
     "esprima": "^4.0.0",
     "graphviz-doc-builder": "^0.1.0",
-    "viz.js": "^2.0.0"
+    "electron": "^2.0.2"
   },
   "devDependencies": {
-    "electron": "^2.0.2"
   },
   "scripts": {
     "start": "electron ."
