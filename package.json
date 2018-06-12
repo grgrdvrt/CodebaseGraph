@@ -11,8 +11,7 @@
     "graphviz-doc-builder": "^0.1.0",
     "electron": "^2.0.2"
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "scripts": {
     "start": "electron ."
   }

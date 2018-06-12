@@ -46,6 +46,8 @@ function buildGraph(data){
             fontcolor:"#111111"
           },
           isOriented:true
+        }).setAttributes({
+          dpi:72,
         }).add(
           dependenciesSubgraph,
           filesSubgraph,
@@ -117,7 +119,7 @@ function fileToDot(data){
     .setAttributes({
       style:"solid",
       shape:"note",
-      margin : 0.5
+      margin : 0
     });
 }
 
@@ -133,7 +135,8 @@ function dirToDot(data){
     })
     .setAttributes({
       shape:"folder",
-      fontsize:30,
+      margin:0,
+      // fontsize:30,
       labeljust:"l"
     }).add(
       ...data.children.map(packageToDot),
@@ -169,10 +172,13 @@ function jsFileToDot(data){
 
   return dot.record([dot.labelCell(path.basename(data.path)), ...classesCells], data.path)
     .setAttributes({
+      fixedsize:true,
+      width:data.dom.offsetWidth * 1/72,
+      height:data.dom.offsetHeight * 1/72,
       style:"filled,solid",
       color:hsv,
       fillcolor:data.color,
-      margin : 0.5
+      margin : 0
     });
 }
 

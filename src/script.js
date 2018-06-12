@@ -9,7 +9,7 @@ const fileSystem = require("./fileSystem");
 const javascript = require("./javascript");
 const traversing = require("./traversing");
 const layout = require("./layout");
-const view = require("./view");
+const view = require("./view/view");
 
 function retrieveJsContent(filesHierachy){
   traversing.traverseFiles(filesHierachy, ".js", file => {
@@ -80,21 +80,45 @@ const options = {
 let filesHierachy = fileSystem.getFileHierarchy(options.src);
 retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
+
+view.initNodes(filesHierachy);
+
 let graph = layout.buildGraph(filesHierachy);
 
 
 
-var child = cp.spawn("dot", ['-Tsvg']);
+// {
+//   let child = cp.spawn("dot", ['-Tsvg']);
 
-child.stdin.write(graph.toString());
+//   child.stdin.write(graph.toString());
 
-let result = "";
-child.stdout.on('finish', function (data) {
-  view.init(result);
-});
+//   let result = "";
+//   child.stdout.on('finish', function (data) {
+//     view.init(result);
+//   });
 
-child.stdout.on('data', function (data) {
-  result += data;
-});
+//   child.stdout.on('data', function (data) {
+//     result += data;
+//   });
 
-child.stdin.end();
+//   child.stdin.end();
+// }
+
+
+
+{
+  let child = cp.spawn("dot", ['-Tjson']);
+
+  child.stdin.write(graph.toString());
+
+  let result = "";
+  child.stdout.on('finish', function (data) {
+    view.initJSON(JSON.parse(result));
+  });
+
+  child.stdout.on('data', function (data) {
+    result += data;
+  });
+
+  child.stdin.end();
+}
