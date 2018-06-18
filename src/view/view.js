@@ -25,14 +25,14 @@ let scale = 1;
 let size = {width:undefined, height:undefined};
 
 function init(contentStr){
-  // svgDom.innerHTML = contentStr;
+  svgDom.innerHTML = contentStr;
   size.width = graphDom.clientWidth;
   size.height = graphDom.clientHeight;
   let nodes = {};
   document.querySelectorAll(".node title").forEach(title => {
     nodes[title.textContent] = title.parentNode;
   });
-  console.log(nodes);
+  // console.log(nodes);
 
   initMouse();
 }
@@ -48,21 +48,11 @@ function initJSON(json){
   let svgMain = svg.create("svg");
   svgDom.appendChild(svgMain.node);
 
-  let result = json.edges.map(e => {
-    let color = (Math.round(Math.random() * 0xffffff)).toString(16);
-    let draws = e["_draw_"];
-    if(!draws) return "";
-    let pts = [];
-    let paths = draws.filter(d => d.points).map(d => d.points.map(pt => {
-      return `${pt[0]},${size.height - pt[1]}`;
-    }));
-    let result = paths.map(pts => {
-      return `<path d="M${pts[0]}C${pts.slice(1).join(" ")}" fill="none" stroke="#${color}"/>`;
-    }).join("");
-    return result;
-  }).join("");
 
-  svgMain.node.innerHTML = result;
+  let result = getEdgesSvg(json.edges);
+  console.log(result);
+  result.forEach(e => svgMain.add(e));
+  // svgMain.node.innerHTML = result;
 
   json.objects.filter(o => o.nodes === undefined).forEach(obj => {
     let node = nodesMap[obj.name];
@@ -75,6 +65,10 @@ function initJSON(json){
   });
 
 
+  let clustersSvg = getClustersSvg(json.objects.filter(o => o.compound === "true"));
+  clustersSvg.forEach(r => svgMain.add(r));
+
+
   svgMain.attrs({
     width:size.width,
     height:size.height
@@ -82,22 +76,62 @@ function initJSON(json){
   initMouse();
 }
 
+
+
 function initNodes(data){
-  // console.log("initNodes", data);
   traversing.traverseFiles(data, undefined, f => {
     if(f.type === ".js"){
       let node = createJSNode(f);
       f.dom = node;
       nodesContainer.appendChild(node);
-      // console.log(node.offsetWidth, node.offsetHeight);
     }
   });
 }
 
+
+function getEdgesSvg(edges){
+  let result = [];
+  edges.forEach(e => {
+    let color = (Math.round(Math.random() * 0xffffff)).toString(16);
+    let draws = e["_draw_"];
+    if(!draws) return;
+    let paths = draws.filter(d => d.points).map(d => {
+      let pts = d.points.map(pt => {
+        return `${pt[0]},${size.height - pt[1]}`;
+      });
+
+      result.push(svg.create("path").attrs({
+        d:`M${pts[0]}C${pts.slice(1).join(" ")}`,
+        fill:"none",
+        stroke:"#" + color
+      }));
+    });
+  });
+  return result;
+}
+
+
+function getClustersSvg(clusters){
+  return clusters.map(cluster => {
+    let bb = cluster.bb.split(",").map(Number);
+    let w = bb[2] - bb[0];
+    let h = bb[3] - bb[1];
+    return svg.create("rect").attrs({
+      x:bb[0],
+      y:size.height - bb[1] - h,
+      width:w,
+      height:h,
+      fill:"none",
+      stroke:"black",
+      "stroke-width":1
+    });
+  });
+}
+
+
 function createJSNode(data){
   let node = document.createElement("div");
   node.classList.add("jsNode");
-  // console.log(data.path, node);
   nodesMap[data.path] = node;
 
   const classesStrs = data.content.classes.map(classToDom);
