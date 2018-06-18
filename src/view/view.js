@@ -38,6 +38,10 @@ function init(contentStr){
 }
 
 
+
+function HSVColorToString(color){
+  return HSLToString(HSVToHSL(color.split(" ").map(Number)));
+}
 function initJSON(json){
   console.log(json);
 
@@ -50,7 +54,6 @@ function initJSON(json){
 
 
   let result = getEdgesSvg(json.edges);
-  console.log(result);
   result.forEach(e => svgMain.add(e));
   // svgMain.node.innerHTML = result;
 
@@ -59,8 +62,10 @@ function initJSON(json){
     if(node === undefined)return;
     let pos = obj.pos.split(",").map(Number);
     Object.assign(node.style, {
-      left:(pos[0] - 72 * 0.5 * Number(obj.width)) + "px",
-      top:(size.height - (pos[1] + 72 * 0.5 * Number(obj.height))) + "px"
+      left:Math.round(pos[0] - 72 * 0.5 * Number(obj.width)) + "px",
+      top:Math.round((size.height - (pos[1] + 72 * 0.5 * Number(obj.height)))) + "px",
+      borderColor : HSVColorToString(obj.color),
+      backgroundColor : HSVColorToString(obj.fillcolor)
     });
   });
 
@@ -77,6 +82,21 @@ function initJSON(json){
 }
 
 
+function HSVToHSL(hsv){
+  let h =2-hsv[1] * hsv[2];
+  return {
+    h : hsv[0],
+    s : hsv[1]*hsv[2]/(h < 1 ? h : 2 - h),
+    l:h / 2
+  };
+}
+
+function HSLToString(hsl){
+  let h = Math.round(hsl.h * 360);
+  let s = Math.round(hsl.s * 100);
+  let l = Math.round(hsl.l * 100);
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
 
 function initNodes(data){
   traversing.traverseFiles(data, undefined, f => {
@@ -92,10 +112,11 @@ function initNodes(data){
 function getEdgesSvg(edges){
   let result = [];
   edges.forEach(e => {
-    let color = (Math.round(Math.random() * 0xffffff)).toString(16);
+
     let draws = e["_draw_"];
     if(!draws) return;
-    let paths = draws.filter(d => d.points).map(d => {
+    let paths = draws.filter(d => d.points).map((d, i) => {
+      let color = draws[2 * i].color;
       let pts = d.points.map(pt => {
         return `${pt[0]},${size.height - pt[1]}`;
       });
@@ -103,7 +124,7 @@ function getEdgesSvg(edges){
       result.push(svg.create("path").attrs({
         d:`M${pts[0]}C${pts.slice(1).join(" ")}`,
         fill:"none",
-        stroke:"#" + color
+        stroke:color
       }));
     });
   });
@@ -136,6 +157,7 @@ function createJSNode(data){
 
   const classesStrs = data.content.classes.map(classToDom);
   const imports = data.content.imports.map(i => i.path).join("<br>");
+
 
   node.innerHTML = imports + "<br>" + classesStrs.join("<br>");
   return node;
