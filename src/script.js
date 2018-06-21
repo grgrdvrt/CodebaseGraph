@@ -62,6 +62,14 @@ function resolveImports(filesHierachy){
   });
 }
 
+function getDependencies(data){
+
+  let dependencies = [];
+  traversing.traverseFiles(data, ".js", file => {
+    dependencies.push(...file.globalDependencies);
+  });
+  return Array.from(new Set(dependencies));
+}
 
 
 // const optionDefinitions = [
@@ -72,7 +80,9 @@ function resolveImports(filesHierachy){
 // const options = commandLineArgs(optionDefinitions);
 
 const options = {
-  src:"src",
+  // src:"src",
+  // src:"/Users/gregoire/Documents/projets/HAVAS_PARIS/veolia-parcours-de-leau/src/js",
+  src:"/Users/gregoire/Documents/projets/sobieski/src/js",
   output:"build/result2.dot"
 };
 
@@ -81,9 +91,10 @@ let filesHierachy = fileSystem.getFileHierarchy(options.src);
 retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
 
-view.initNodes(filesHierachy);
+let dependencies = getDependencies(filesHierachy);
+let domNodes = view.initNodes(filesHierachy, dependencies);
 
-let graph = layout.buildGraph(filesHierachy);
+let graph = layout.buildGraph(filesHierachy, dependencies);
 
 
 
@@ -113,7 +124,7 @@ let graph = layout.buildGraph(filesHierachy);
 
   let result = "";
   child.stdout.on('finish', function (data) {
-    view.initJSON(JSON.parse(result));
+    view.initJSON(JSON.parse(result), domNodes);
   });
 
   child.stdout.on('data', function (data) {

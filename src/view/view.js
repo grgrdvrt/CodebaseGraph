@@ -4,6 +4,14 @@ const traversing = require("../traversing");
 
 const svg = require("./svg");
 
+const openInEditor = require('open-in-editor');
+const editor = openInEditor.configure({
+  // cmd:"/Applications/Emacs.app/Contents/MacOS/Emacs",
+  editor:"code"
+}, function(err) {
+  console.error('Something went wrong: ' + err);
+});
+
 
 let graphDom = document.createElement("div");
 document.body.appendChild(graphDom);
@@ -16,7 +24,6 @@ let nodesContainer = document.createElement("div");
 graphDom.appendChild(nodesContainer);
 nodesContainer.classList.add("nodesContainer");
 
-let nodesMap = {};
 
 let posInit = {x:0, y:0};
 let graphPos = {x:0, y:0};
@@ -39,10 +46,7 @@ function init(contentStr){
 
 
 
-function HSVColorToString(color){
-  return HSLToString(HSVToHSL(color.split(" ").map(Number)));
-}
-function initJSON(json){
+function initJSON(json, nodesMap){
   console.log(json);
 
   let s = json.bb.split(",");
@@ -65,7 +69,7 @@ function initJSON(json){
       left:Math.round(pos[0] - 72 * 0.5 * Number(obj.width)) + "px",
       top:Math.round((size.height - (pos[1] + 72 * 0.5 * Number(obj.height)))) + "px",
       borderColor : HSVColorToString(obj.color),
-      backgroundColor : HSVColorToString(obj.fillcolor)
+      backgroundColor : HSVColorToString(obj.fillcolor || "0 0 0")
     });
   });
 
@@ -79,17 +83,24 @@ function initJSON(json){
     height:size.height
   });
   initMouse();
+  center();
 }
 
 
+function HSVColorToString(color){
+  return HSLToString(HSVToHSL(color.split(" ").map(Number)));
+}
+
 function HSVToHSL(hsv){
-  let h =2-hsv[1] * hsv[2];
+  //from https://gist.github.com/xpansive/1337890
+  let h = 2 - hsv[1] * hsv[2];
   return {
     h : hsv[0],
-    s : hsv[1]*hsv[2]/(h < 1 ? h : 2 - h),
+    s : hsv[1] * hsv[2]/(h < 1 ? h : 2 - h),
     l:h / 2
   };
 }
+
 
 function HSLToString(hsl){
   let h = Math.round(hsl.h * 360);
@@ -98,14 +109,30 @@ function HSLToString(hsl){
   return `hsl(${h}, ${s}%, ${l}%)`;
 }
 
-function initNodes(data){
+
+function initNodes(data, dependencies){
+  let nodesMap = {};
   traversing.traverseFiles(data, undefined, f => {
     if(f.type === ".js"){
       let node = createJSNode(f);
+      nodesMap[f.path] = node;
+      f.dom = node;
+      nodesContainer.appendChild(node);
+    }
+    else if(f.type !== "dir"){
+      let node = createFileNode(f);
+      nodesMap[f.path] = node;
       f.dom = node;
       nodesContainer.appendChild(node);
     }
   });
+
+  dependencies.forEach(dep => {
+    let node = createFileNode(dep);
+    dep.dom = node;
+    nodesContainer.appendChild(node);
+  });
+  return nodesMap;
 }
 
 
@@ -124,6 +151,7 @@ function getEdgesSvg(edges){
       result.push(svg.create("path").attrs({
         d:`M${pts[0]}C${pts.slice(1).join(" ")}`,
         fill:"none",
+        "stroke-width":2,
         stroke:color
       }));
     });
@@ -144,43 +172,69 @@ function getClustersSvg(clusters){
       height:h,
       fill:"none",
       stroke:"black",
-      "stroke-width":1
+      "stroke-width":2
     });
   });
 }
 
 
+function createFileNode(data){
+  let node = document.createElement("div");
+  node.classList.add("fileNode");
+  node.filePath = data.absolutePath;
+
+  node.innerHTML = `<span class="fileName" data-loc="0">${data.name}</span>`;
+  return node;
+}
+
 function createJSNode(data){
   let node = document.createElement("div");
   node.classList.add("jsNode");
-  nodesMap[data.path] = node;
+  node.filePath = data.absolutePath;
 
   const classesStrs = data.content.classes.map(classToDom);
-  const imports = data.content.imports.map(i => i.path).join("<br>");
+  // const imports = data.content.imports.map(i => i.modulePath).join("<br>");
 
-
-  node.innerHTML = imports + "<br>" + classesStrs.join("<br>");
+  let fileName = `<span class="fileName" data-loc="0">${data.name}</span>`;
+  node.innerHTML = fileName + "<br>" + classesStrs.join("<br>");
   return node;
 }
 
 
 function classToDom(classDeclaration){
   const d = classDeclaration;
-  const methods = d.methods.map(m => `${m.name}(${m.params.join(", ")})`);
+  const methods = d.methods.map(m => `<span class="method" data-loc="${m.loc.line}:${m.loc.column}">${m.name}(${m.params.join(",&nbsp;")})</span>`);
   let str = "";
-  str += d.name;
-  str += (d.superclass === null ? '' : ' extends ' + d.superclass) + "<br>";
+  str += `<span class="className" data-loc="${d.loc.line}:${d.loc.column}">${d.name}${d.superclass === null ? '' : '&nbsp;extends&nbsp;' + d.superclass}</span><br>`;
   str += methods.join("<br>");
   return str;
 }
 
 
 
+
+function center(){
+  graphPos.x = 0.5 * (window.innerWidth - size.width);
+  graphPos.y = 0.5 * (window.innerHeight - size.height);
+  let sx = size.width / window.innerWidth;
+  let sy = size.height / window.innerHeight;
+  scale = 1 / Math.max(sx, sy);
+  applyTransform(scale, graphPos.x, graphPos.y);
+}
+
 //MOUSE INTERACTION
 
 function initMouse(){
   document.addEventListener("mousedown", startDrag);
   document.addEventListener("mousewheel", zoom);
+
+
+  document.addEventListener("click", e => {
+    if(e.target.dataset.loc !== undefined){
+      console.log(e.target.parentNode.filePath + ":" + e.target.dataset.loc);
+      editor.open(e.target.parentNode.filePath + ":" + e.target.dataset.loc);
+    }
+  });
 }
 
 

@@ -2,14 +2,6 @@ const traversing = require("./traversing");
 const dot = require('graphviz-doc-builder');
 const path = require('path');
 
-function getDependencies(data){
-
-  let dependencies = [];
-  traversing.traverseFiles(data, ".js", file => {
-      dependencies.push(...file.globalDependencies);
-  });
-  return Array.from(new Set(dependencies));
-}
 
 
 
@@ -22,9 +14,8 @@ function randomColor(){
 }
 
 
-function buildGraph(data){
+function buildGraph(data, dependencies){
   assignColor(data, {min:0, max:1});
-  const dependencies = getDependencies(data);
 
   const dependenciesSubgraph = dependenciesToDot(dependencies);
   const filesSubgraph = packageToDot(data);
@@ -117,6 +108,9 @@ function packageToDot(data){
 function fileToDot(data){
   return dot.node(path.basename(data.path), data.path)
     .setAttributes({
+      fixedsize:true,
+      width:data.dom.offsetWidth * 1/72,
+      height:data.dom.offsetHeight * 1/72,
       style:"solid",
       shape:"note",
       margin : 0

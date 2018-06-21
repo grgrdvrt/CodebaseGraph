@@ -18,18 +18,20 @@ function jsImport(modulePath, moduleName){
   };
 }
 
-function jsClass(name, superclass, methods){
+function jsClass(name, superclass, methods, loc){
   return {
     name:name,
     superclass:superclass,
-    methods:methods
+    methods:methods,
+    loc:loc
   };
 }
 
-function jsMethod(name, params){
+function jsMethod(name, params, loc){
   return {
     name:name,
-    params:params
+    params:params,
+    loc:loc
   };
 }
 
@@ -47,7 +49,7 @@ function getFileContent(fileInfos, src){
     .replace(/export \w* from .*\n/g, "");
   var body;
   try{
-    body = esprima.parseModule(src).body;
+    body = esprima.parseModule(src, {comments:true, loc:true}).body;
   }
   catch(e){
     console.log(src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"));
@@ -106,7 +108,8 @@ function parseClass(classDeclaration){
   return jsClass(
     classDeclaration.id.name,
     superClass ? superClass.name : null,
-    parseTypes(classDeclaration.body.body, 'MethodDefinition', parseMethod)
+    parseTypes(classDeclaration.body.body, 'MethodDefinition', parseMethod),
+    classDeclaration.loc.start
   );
 }
 
@@ -114,7 +117,8 @@ function parseClass(classDeclaration){
 function parseMethod(methodDefinition){
   return jsMethod(
     methodDefinition.key.name,
-    methodDefinition.value.params.map(param => param.name)
+    methodDefinition.value.params.map(param => param.name),
+    methodDefinition.loc.start
   );
 }
 

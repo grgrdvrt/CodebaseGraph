@@ -1,0 +1,64 @@
+body{
+  overflow:hidden;
+  position:relative;
+
+  font-family:sans-serif;
+}
+
+.node{
+  pointer-events:none;
+}
+
+.graphDom{
+  top:0px;
+  left:0px;
+  position:absolute;
+  user-select:none;
+}
+
+.jsNode{
+  display : inline-block;
+  position : absolute;
+  border:solid 2px black;
+  padding:7px;
+  top : 0px;
+  left : 0px;
+}
+
+.fileNode{
+  display : inline-block;
+  position : absolute;
+  border:solid 2px black;
+  padding:7px;
+  top : 0px;
+  left : 0px;
+}
+
+.nodesContainer{
+  position:absolute;
+  top:0px;
+  left:0px;
+}
+
+.fileName{
+  cursor:pointer;
+  font-size:18px;
+  margin-top:2px;
+}
+
+.className{
+  cursor:pointer;
+  font-size:20px;
+  margin-top:2px;
+}
+
+.method{
+  cursor:pointer;
+  margin-top:2px;
+}
+
+.fileName:hover,
+.className:hover,
+.method:hover{
+  background-color:rgba(0, 0, 0, 0.1);
+}
