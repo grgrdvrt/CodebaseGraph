@@ -5,11 +5,24 @@ var cp = require('child_process');
 
 const commandLineArgs = require("command-line-args");
 
-const fileSystem = require("./fileSystem");
-const javascript = require("./javascript");
-const traversing = require("./traversing");
-const layout = require("./layout");
-const view = require("./view/view");
+const fileSystem = require("./app/fileSystem");
+const javascript = require("./app/javascript");
+const traversing = require("./app/traversing");
+const layout = require("./app/layout");
+
+const {View} = require("./view");
+const {MouseController} = require("./view/MouseController");
+
+const {
+  createNodes,
+  createFileNode,
+  createJSNode,
+  classToDom,
+  initNodes,
+  getClustersSvg,
+  getEdgesSvg
+} = require("./view/objects");
+
 
 function retrieveJsContent(filesHierachy){
   traversing.traverseFiles(filesHierachy, ".js", file => {
@@ -17,6 +30,7 @@ function retrieveJsContent(filesHierachy){
     file.content = javascript.getFileContent(file, data);
   });
 }
+
 
 function resolveImports(filesHierachy){
 
@@ -80,9 +94,7 @@ function getDependencies(data){
 // const options = commandLineArgs(optionDefinitions);
 
 const options = {
-  // src:"src",
-  // src:"/Users/gregoire/Documents/projets/HAVAS_PARIS/veolia-parcours-de-leau/src/js",
-  src:"/Users/gregoire/Documents/projets/sobieski/src/js",
+  src:"src",
   output:"build/result2.dot"
 };
 
@@ -91,8 +103,14 @@ let filesHierachy = fileSystem.getFileHierarchy(options.src);
 retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
 
+
+let view = new View();
+
 let dependencies = getDependencies(filesHierachy);
-let domNodes = view.initNodes(filesHierachy, dependencies);
+let domNodes = createNodes(filesHierachy, dependencies);
+for(let path in domNodes){
+  view.nodesContainer.appendChild(domNodes[path]);
+}
 
 let graph = layout.buildGraph(filesHierachy, dependencies);
 
@@ -105,7 +123,9 @@ let graph = layout.buildGraph(filesHierachy, dependencies);
 
 //   let result = "";
 //   child.stdout.on('finish', function (data) {
-//     view.init(result);
+//     view.svgDom.innerHTML = data;
+//     view.width = this.domElement.clientWidth;
+//     view.height = this.domElement.clientHeight;
 //   });
 
 //   child.stdout.on('data', function (data) {
@@ -124,7 +144,21 @@ let graph = layout.buildGraph(filesHierachy, dependencies);
 
   let result = "";
   child.stdout.on('finish', function (data) {
-    view.initJSON(JSON.parse(result), domNodes);
+    let json = JSON.parse(result);
+    view.init(json);
+
+    let edgesSvg = getEdgesSvg(json.edges, view);
+    edgesSvg.forEach(e => view.svgMain.add(e));
+
+    let clustersSvg = getClustersSvg(json.objects.filter(o => o.compound === "true"), view);
+    clustersSvg.forEach(r => view.svgMain.add(r));
+
+    initNodes(domNodes, json, view);
+
+    let controller = new MouseController(view);
+    controller.enable();
+
+
   });
 
   child.stdout.on('data', function (data) {

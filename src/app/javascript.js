@@ -42,11 +42,22 @@ function parseTypes(items, type, parseFunction){
 
 function getFileContent(fileInfos, src){
   src = src.replace(/static \w* = .*;?\n/g, "")
-    .replace(/\[[^{]*\.\.\./g, "")
-    .replace(/{[^[]\.\.\./g, "x:")
+    .replace(/(\[[^{()]*)\.\.\./g, "$1")
+    .replace(/({[^[(]*)\.\.\./g, "$1x:")
+    .replace(/(\([^[{]*)\.\.\./g, "$1")
     .replace(/@?autobind/g, "")
     .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
     .replace(/export \w* from .*\n/g, "");
+
+  //FIXME hack
+  src = src.replace(/static \w* = .*;?\n/g, "")
+    .replace(/(\[[^{]*)\.\.\./g, "$1")
+    .replace(/({[^[]*)\.\.\./g, "$1x:")
+    .replace(/(\([^[{]*)\.\.\./g, "$1")
+    .replace(/@?autobind/g, "")
+    .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
+    .replace(/export \w* from .*\n/g, "");
+
   var body;
   try{
     body = esprima.parseModule(src, {comments:true, loc:true}).body;
