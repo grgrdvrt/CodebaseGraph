@@ -10,8 +10,14 @@ const javascript = require("./app/javascript");
 const traversing = require("./app/traversing");
 const layout = require("./app/layout");
 
-const {View} = require("./view");
-const {MouseController} = require("./view/MouseController");
+const {
+  file,
+  externalDependency
+} = require("./app/fileSystem");
+
+const {View} = require("./view/View");
+const {Controller} = require("./view/Controller");
+
 
 const {
   createNodes,
@@ -19,6 +25,7 @@ const {
   createJSNode,
   classToDom,
   initNodes,
+  getClustersNodes,
   getClustersSvg,
   getEdgesSvg
 } = require("./view/objects");
@@ -76,94 +83,69 @@ function resolveImports(filesHierachy){
   });
 }
 
-function getDependencies(data){
+function getExternalDependencies(data){
 
   let dependencies = [];
   traversing.traverseFiles(data, ".js", file => {
     dependencies.push(...file.globalDependencies);
   });
-  return Array.from(new Set(dependencies));
+  return Array.from(new Set(dependencies))
+    .map(path => externalDependency(path));
 }
 
 
-// const optionDefinitions = [
-//   { name: "src", type: String, defaultOption: true },
-//   { name: "output", alias:"o", type: String},
-// ];
-
-// const options = commandLineArgs(optionDefinitions);
-
-const options = {
-  src:"src",
-  output:"build/result2.dot"
-};
+let src = "src";
 
 
-let filesHierachy = fileSystem.getFileHierarchy(options.src);
+let filesHierachy = fileSystem.getFileHierarchy(src);
 retrieveJsContent(filesHierachy);
 resolveImports(filesHierachy);
 
 
 let view = new View();
 
-let dependencies = getDependencies(filesHierachy);
-let domNodes = createNodes(filesHierachy, dependencies);
+let externalDependencies = getExternalDependencies(filesHierachy);
+let domNodes = createNodes(filesHierachy, externalDependencies);
 for(let path in domNodes){
   view.nodesContainer.appendChild(domNodes[path]);
 }
 
-let graph = layout.buildGraph(filesHierachy, dependencies);
+let graph = layout.buildGraph(filesHierachy, externalDependencies);
 
 
 
-// {
-//   let child = cp.spawn("dot", ['-Tsvg']);
-
-//   child.stdin.write(graph.toString());
-
-//   let result = "";
-//   child.stdout.on('finish', function (data) {
-//     view.svgDom.innerHTML = data;
-//     view.width = this.domElement.clientWidth;
-//     view.height = this.domElement.clientHeight;
-//   });
-
-//   child.stdout.on('data', function (data) {
-//     result += data;
-//   });
-
-//   child.stdin.end();
-// }
 
 
 
-{
-  let child = cp.spawn("dot", ['-Tjson']);
+let child = cp.spawn("dot", ['-Tjson']);
 
-  child.stdin.write(graph.toString());
+child.stdin.write(graph.toString());
 
-  let result = "";
-  child.stdout.on('finish', function (data) {
-    let json = JSON.parse(result);
-    view.init(json);
+let result = "";
+child.stdout.on('finish', function (data) {
+  let json = JSON.parse(result);
+  view.init(json);
 
-    let edgesSvg = getEdgesSvg(json.edges, view);
-    edgesSvg.forEach(e => view.svgMain.add(e));
+  let edgesSvg = getEdgesSvg(json.edges, view);
+  edgesSvg.forEach(e => view.svgMain.add(e));
 
-    let clustersSvg = getClustersSvg(json.objects.filter(o => o.compound === "true"), view);
-    clustersSvg.forEach(r => view.svgMain.add(r));
+  // let clustersSvg = getClustersSvg(json.objects.filter(o => o.compound === "true"), view);
+  // clustersSvg.forEach(r => view.svgMain.add(r));
 
-    initNodes(domNodes, json, view);
-
-    let controller = new MouseController(view);
-    controller.enable();
+  let clustersNodes = getClustersNodes(json.objects.filter(o => o.compound === "true"), view);
+  clustersNodes.forEach(node => view.packagesContainer.appendChild(node));
 
 
-  });
+  initNodes(domNodes, json, view);
 
-  child.stdout.on('data', function (data) {
-    result += data;
-  });
+  let controller = new Controller(view);
+  controller.enable();
 
-  child.stdin.end();
-}
+
+});
+
+child.stdout.on('data', function (data) {
+  result += data;
+});
+
+child.stdin.end();

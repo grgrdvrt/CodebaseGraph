@@ -4,10 +4,11 @@ const esprima = require('esprima');
 const path = require('path');
 
 
-function jsFileContent(imports, classes){
+function jsFileContent(imports, classes, errors){
   return {
     imports:imports,
-    classes:classes
+    classes:classes,
+    errors:errors
   };
 }
 
@@ -58,15 +59,18 @@ function getFileContent(fileInfos, src){
     .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
     .replace(/export \w* from .*\n/g, "");
 
-  var body;
+  let body;
+  let errors = [];
   try{
     body = esprima.parseModule(src, {comments:true, loc:true}).body;
   }
-  catch(e){
-    console.log(src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"));
-    console.log(fileInfos.path);
-    console.error(e);
-    return jsFileContent([],[]);
+  catch(err){
+    errors.push({
+      file: src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"),
+      path:fileInfos.path,
+      err:err,
+    });
+    return jsFileContent([],[], errors);
   }
   const classes = parseTypes(body, 'ClassDeclaration', parseClass);
   const imports = parseTypes(body, 'ImportDeclaration', parseImport)
@@ -76,6 +80,7 @@ function getFileContent(fileInfos, src){
   return jsFileContent(
     [...imports, ...requires],
     classes,
+    errors
   );
 }
 

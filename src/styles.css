@@ -5,15 +5,27 @@ body{
   font-family:sans-serif;
 }
 
-.node{
+.js-blockOpenClick .node > *{
   pointer-events:none;
 }
 
+.packagesContainer{
+  position:absolute;
+  top:0;
+  left:0;
+}
+
+.package{
+  position:absolute;
+  border:solid 2px black;
+}
+
 .graphDom{
+  position:absolute;
   top:0px;
   left:0px;
-  position:absolute;
   user-select:none;
+  white-space:nowrap;
 }
 
 .jsNode{
@@ -25,6 +37,7 @@ body{
   left : 0px;
 }
 
+.dependencyNode,
 .fileNode{
   display : inline-block;
   position : absolute;
@@ -40,10 +53,16 @@ body{
   left:0px;
 }
 
+
+.dependencyName{
+  font-size:18px;
+  margin:2px;
+}
+
 .fileName{
   cursor:pointer;
   font-size:18px;
-  margin-top:2px;
+  margin:2px;
 }
 
 .className{

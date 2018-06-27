@@ -23,6 +23,13 @@ function file(name, relativePath, absolutePath){
   };
 }
 
+function externalDependency(path){
+  return {
+    path:path,
+    type:'externalDependency',
+  };
+}
+
 function getFileHierarchyAux(dirPath, rootPath){
   const dirName = path.parse(dirPath).name;
   const dirAbsolutePath = path.join(rootPath, dirPath);
@@ -47,6 +54,9 @@ function getFileHierarchy(dirPath){
 }
 
 
-module.exports = {
-  getFileHierarchy:getFileHierarchy
-};
+Object.assign(module.exports, {
+  getFileHierarchy:getFileHierarchy,
+  dir:dir,
+  file:file,
+  externalDependency:externalDependency
+});

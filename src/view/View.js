@@ -4,18 +4,8 @@ const traversing = require("../app/traversing");
 
 const svg = require("./svg");
 
-const openInEditor = require('open-in-editor');
-const editor = openInEditor.configure({
-  // cmd:"/Applications/Emacs.app/Contents/MacOS/Emacs",
-  editor:"code"
-}, function(err) {
-  console.error('Something went wrong: ' + err);
-});
 
-
-
-
-class View{
+class View {
   constructor(){
 
     this.scale = 1;
@@ -34,12 +24,13 @@ class View{
     this.svgMain = svg.create("svg");
     this.svgDom.appendChild(this.svgMain.node);
 
+    this.packagesContainer = document.createElement("div");
+    this.packagesContainer.classList.add("packagesContainer");
+    this.domElement.appendChild(this.packagesContainer);
+
     this.nodesContainer = document.createElement("div");
     this.nodesContainer.classList.add("nodesContainer");
     this.domElement.appendChild(this.nodesContainer);
-
-
-    document.addEventListener("click", this.onClick);
   }
 
 
@@ -57,21 +48,9 @@ class View{
   }
 
 
-  onClick(e){
-    if(e.target.dataset.loc !== undefined){
-      let parentObj = e.target.parentNode;
-      //FIXME hack
-      while(parentObj && parentObj.dataset.path === undefined){
-        parentObj = parentObj.parentNode;
-      }
-
-      console.log(parentObj.dataset.path + ":" + e.target.dataset.loc);
-      editor.open(parentObj.dataset.path + ":" + e.target.dataset.loc);
-    }
-  }
 
   setScale(scale){
-    this.scale = scale;
+    this.scale = Math.max(0.05, Math.min(1, scale));
     this.applyTransform();
   }
 
@@ -99,6 +78,7 @@ class View{
   applyTransform(){
     this.domElement.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale}) `;
   }
+
 
 }
 

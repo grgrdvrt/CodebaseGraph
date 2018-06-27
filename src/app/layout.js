@@ -187,8 +187,12 @@ function dependenciesToDot(dependencies){
     }).setParams({isCluster:true})
     .add(
       ...(dependencies.map(dep => {
-        return dot.node(dep, dep)
-          .setAttributes({shape:"rectangle"});
+        return dot.node(dep.path, dep.path)
+          .setAttributes({
+            fixedsize:true,
+            width:dep.dom.offsetWidth * 1/72,
+            height:dep.dom.offsetHeight * 1/72,
+            shape:"rectangle"});
       }))
     );
 }

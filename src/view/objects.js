@@ -20,7 +20,8 @@ function createNodes(data, dependencies){
   });
 
   dependencies.forEach(dep => {
-    let node = createFileNode(dep);
+    let node = createDependencyNode(dep);
+    nodesMap[dep.path] = node;
     dep.dom = node;
   });
   return nodesMap;
@@ -28,10 +29,24 @@ function createNodes(data, dependencies){
 
 
 
+function createDependencyNode(data){
+
+  let fileNode = document.createElement("div");
+  fileNode.classList.add("node", "dependencyNode");
+
+  let nameNode = document.createElement("h3");
+  nameNode.classList.add("dependencyName");
+  nameNode.innerHTML = data.path;
+  fileNode.appendChild(nameNode);
+
+  return fileNode;
+}
+
+
 function createFileNode(data){
 
   let fileNode = document.createElement("div");
-  fileNode.classList.add("fileNode");
+  fileNode.classList.add("node", "fileNode");
   fileNode.dataset.path = data.absolutePath;
 
   let nameNode = document.createElement("h3");
@@ -47,7 +62,7 @@ function createFileNode(data){
 
 function createJSNode(data){
   let fileNode = document.createElement("div");
-  fileNode.classList.add("jsNode");
+  fileNode.classList.add("node", "jsNode");
   fileNode.dataset.path = data.absolutePath;
 
   let nameNode = document.createElement("h3");
@@ -56,9 +71,14 @@ function createJSNode(data){
   nameNode.innerHTML = data.name;
   fileNode.appendChild(nameNode);
 
-
-  data.content.classes.map(classToDom)
-    .forEach(fileNode.appendChild, fileNode);
+  if(data.content.errors.length){
+    data.content.errors.map(errorToDom)
+      .forEach(fileNode.appendChild, fileNode);
+  }
+  else {
+    data.content.classes.map(classToDom)
+      .forEach(fileNode.appendChild, fileNode);
+  }
 
   return fileNode;
 }
@@ -69,7 +89,7 @@ function classToDom(classDeclaration){
   const d = classDeclaration;
   let name = d.name;
   if(d.superclass !== null){
-    name += '&nbsp;extends&nbsp;' + d.superclass;
+    name += ' extends ' + d.superclass;
   }
 
   let classNode = document.createElement("div");
@@ -95,12 +115,22 @@ function classToDom(classDeclaration){
 
 }
 
+function errorToDom(errors){
+  let errorsNode = document.createElement("ul");
+  errors.map(err => {
+    let errorNode = document.createElement("li");
+    errorNode.innerHTML = err.err.message;
+    errorsNode.appendChild(errorNode);
+    return errorNode;
+  }).forEach(errorsNode.appendChild, errorsNode);
+  return errorsNode;
+}
+
 
 
 
 
 function initNodes(nodesMap, json, view){
-  console.log(json);
   json.objects.filter(o => o.nodes === undefined).forEach(obj => {
     let node = nodesMap[obj.name];
     if(node === undefined)return;
@@ -108,12 +138,31 @@ function initNodes(nodesMap, json, view){
     Object.assign(node.style, {
       left:Math.round(pos[0] - 72 * 0.5 * Number(obj.width)) + "px",
       top:Math.round((view.height - (pos[1] + 72 * 0.5 * Number(obj.height)))) + "px",
-      borderColor : color.HSVColorToString(obj.color),
+      borderColor : color.HSVColorToString(obj.color || "0 0 0"),
       backgroundColor : color.HSVColorToString(obj.fillcolor || "0 0 0")
     });
   });
 }
 
+
+function getClustersNodes(clustersData, view){
+  return clustersData.map(cluster => {
+    let bb = cluster.bb.split(",").map(Number);
+    let w = bb[2] - bb[0];
+    let h = bb[3] - bb[1];
+
+    let node = document.createElement("div");
+    node.classList.add("package");
+    node.innerHTML = cluster.label;
+    Object.assign(node.style, {
+      width:Math.round(w) + "px",
+      height:Math.round(h) + "px",
+      left:Math.round(bb[0]) + "px",
+      top:Math.round((view.height - (bb[1] + h))) + "px",
+    });
+    return node;
+  });
+}
 
 
 function getClustersSvg(clustersData, view){
@@ -164,6 +213,7 @@ Object.assign(module.exports, {
   createJSNode,
   classToDom,
   initNodes,
+  getClustersNodes,
   getClustersSvg,
   getEdgesSvg
 });
