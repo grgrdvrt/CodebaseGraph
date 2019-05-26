@@ -23,16 +23,14 @@ const {
   createNodes,
   createFileNode,
   createJSNode,
-  classToDom,
-  initNodes,
-  getClustersNodes,
-  getClustersSvg,
+  initNode,
+  getClusterNode,
   getEdgesSvg
 } = require("./view/objects");
 
 
 function retrieveJsContent(filesHierachy){
-  traversing.traverseFiles(filesHierachy, ".js", file => {
+  traversing.traverseFiles(filesHierachy, /\.jsx?$/, file => {
     const data = fs.readFileSync(file.absolutePath, "utf8");
     file.content = javascript.getFileContent(file, data);
   });
@@ -41,10 +39,10 @@ function retrieveJsContent(filesHierachy){
 
 function resolveImports(filesHierachy){
 
-  traversing.traverseFiles(filesHierachy, ".js", file => {
+  traversing.traverseFiles(filesHierachy, /\.jsx?$/, file => {
 
     const localDependencies = new Set();
-    const globalDependencies = new Set();
+    const externalDependencies = new Set();
 
     file.content.imports.forEach(importInfos => {
 
@@ -58,16 +56,13 @@ function resolveImports(filesHierachy){
       }
 
 
-      let importedFile = traversing.find(filesHierachy, modulePath);
-      if(importedFile === null){
-        importedFile = traversing.find(filesHierachy, modulePath + ".js");
-      }
-      if(importedFile === null){
-        importedFile = traversing.find(filesHierachy, path.join(modulePath, "index.js"));
-      }
+      let importedFile = traversing.find(filesHierachy, modulePath) ||
+        traversing.find(filesHierachy, modulePath + ".js") ||
+        traversing.find(filesHierachy, modulePath + ".jsx") ||
+        traversing.find(filesHierachy, path.join(modulePath, "index.js"));
 
       if(importedFile === null){
-        globalDependencies.add(modulePath);
+        externalDependencies.add(modulePath);
       }
       else {
         localDependencies.add(importedFile.path);
@@ -78,74 +73,93 @@ function resolveImports(filesHierachy){
     });
 
     file.localDependencies = Array.from(localDependencies);
-    file.globalDependencies = Array.from(globalDependencies);
-
+    file.externalDependencies = Array.from(externalDependencies);
   });
 }
 
 function getExternalDependencies(data){
 
   let dependencies = [];
-  traversing.traverseFiles(data, ".js", file => {
-    dependencies.push(...file.globalDependencies);
+  traversing.traverseFiles(data, /\.jsx?$/, file => {
+    dependencies.push(...file.externalDependencies);
   });
   return Array.from(new Set(dependencies))
     .map(path => externalDependency(path));
 }
 
 
-let src = "src";
 
 
-let filesHierachy = fileSystem.getFileHierarchy(src);
-retrieveJsContent(filesHierachy);
-resolveImports(filesHierachy);
+let browseBtn = document.createElement("button");
+browseBtn.innerText = "select project";
+document.body.appendChild(browseBtn);
 
 
-let view = new View();
+const {remote} = require('electron');
+browseBtn.addEventListener('click', _ => {
+  let result = remote.dialog.showOpenDialog({
+    properties:['openDirectory']
+  });
+  displayGraph(result[0]);
+});
 
-let externalDependencies = getExternalDependencies(filesHierachy);
-let domNodes = createNodes(filesHierachy, externalDependencies);
-for(let path in domNodes){
-  view.nodesContainer.appendChild(domNodes[path]);
+
+
+function displayGraph(src){
+
+  let filesHierachy = fileSystem.getFileHierarchy(src);
+  retrieveJsContent(filesHierachy);
+  resolveImports(filesHierachy);
+
+
+  let view = new View();
+  document.body.appendChild(view.domElement);
+
+  let externalDependencies = getExternalDependencies(filesHierachy);
+  let domNodes = createNodes(filesHierachy, externalDependencies);
+  view.setNodesMap(domNodes);
+
+  let graph = layout.buildGraph(filesHierachy, externalDependencies);
+
+
+  let child = cp.spawn("dot", ['-Tjson'], {stdio:['pipe' ,'pipe', 'pipe']});
+  child.stdin.setEncoding= "utf-8";
+
+
+  let result = "";
+  child.on('close', function (data) {
+    let json = JSON.parse(result);
+    console.log(json);
+    view.init(json);
+
+    let edgesSvg = getEdgesSvg(json.edges, view);
+    edgesSvg.forEach(e => view.svgMain.add(e));
+
+    let clustersNodes = json.objects.filter(o => o.compound === "true")
+        .map(cluster => getClusterNode(cluster, view));
+    clustersNodes.forEach(node => view.packagesContainer.appendChild(node));
+
+
+    json.objects.filter(o => o.nodes === undefined).forEach(obj => {
+      initNode(domNodes[obj.name], obj, view);
+    });
+
+    let controller = new Controller(view);
+    controller.enable();
+
+    console.log(filesHierachy);
+
+  });
+
+  child.stdout.on('data', function (data) {
+    result += data;
+  });
+
+  child.stdout.on('error', function(err){
+    console.error(err);
+  });
+
+  child.stdin.write(graph.toString());
+  child.stdin.end();
 }
 
-let graph = layout.buildGraph(filesHierachy, externalDependencies);
-
-
-
-
-
-
-let child = cp.spawn("dot", ['-Tjson']);
-
-child.stdin.write(graph.toString());
-
-let result = "";
-child.stdout.on('finish', function (data) {
-  let json = JSON.parse(result);
-  view.init(json);
-
-  let edgesSvg = getEdgesSvg(json.edges, view);
-  edgesSvg.forEach(e => view.svgMain.add(e));
-
-  // let clustersSvg = getClustersSvg(json.objects.filter(o => o.compound === "true"), view);
-  // clustersSvg.forEach(r => view.svgMain.add(r));
-
-  let clustersNodes = getClustersNodes(json.objects.filter(o => o.compound === "true"), view);
-  clustersNodes.forEach(node => view.packagesContainer.appendChild(node));
-
-
-  initNodes(domNodes, json, view);
-
-  let controller = new Controller(view);
-  controller.enable();
-
-
-});
-
-child.stdout.on('data', function (data) {
-  result += data;
-});
-
-child.stdin.end();

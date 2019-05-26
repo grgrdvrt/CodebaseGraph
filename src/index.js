@@ -6,7 +6,13 @@ let win;
 
 function createWindow () {
   // Créer le browser window.
-  win = new BrowserWindow({width: 800, height: 600});
+  win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences:{
+      nodeIntegration:true
+    }
+  });
 
   // et charge le index.html de l'application.
   win.loadFile('src/index.html');
@@ -44,4 +50,3 @@ app.on('activate', () => {
     createWindow();
   }
 });
-

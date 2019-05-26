@@ -1,9 +1,16 @@
+//@doc displays the graph
+
 const path = require("path");
 
 const traversing = require("../app/traversing");
 
 const svg = require("./svg");
 
+const modes = {
+  DEPENDENCIES:"dependencies",
+  BACK_DEPENDENCIES:"backDependencies",
+  ALL:"all",
+};
 
 class View {
   constructor(){
@@ -14,9 +21,15 @@ class View {
     this.x = 0;
     this.y = 0;
 
+    this.buildDom();
+
+    this.mode = modes.ALL;
+  }
+
+
+  buildDom(){
     this.domElement = document.createElement("div");
     this.domElement.classList.add("graphDom");
-    document.body.appendChild(this.domElement);
 
     this.svgDom = document.createElement("div");
     this.domElement.appendChild(this.svgDom);
@@ -48,7 +61,6 @@ class View {
   }
 
 
-
   setScale(scale){
     this.scale = Math.max(0.05, Math.min(1, scale));
     this.applyTransform();
@@ -74,12 +86,81 @@ class View {
   }
 
 
-
   applyTransform(){
     this.domElement.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale}) `;
   }
 
 
+  setNodesMap(nodesMap){
+    this.nodesMap = nodesMap;
+    for(let path in this.nodesMap){
+      this.nodesContainer.appendChild(this.nodesMap[path].dom);
+    }
+  }
+
+
+  focus(node){
+    this.blur();
+    let view = node.view;
+    view.focus();
+    view.data.localDependencies.forEach(depName => this.nodesMap[depName].focus());
+  }
+
+
+  blur(){
+    for(let path in this.nodesMap){
+      this.nodesMap[path].blur();
+    }
+  }
+
+
+  localMode(target){
+    switch(this.mode){
+      case modes.ALL:
+        this.setDependenciesMode(target);
+        break;
+      case modes.DEPENDENCIES:
+        if(target === this.target){
+          this.setBackDependenciesMode(target);
+        }
+        else {
+          this.setDependenciesMode(target);
+        }
+        break;
+      case modes.BACK_DEPENDENCIES:
+        this.setAllMode();
+        break;
+    }
+  }
+
+  setAllMode(){
+    this.mode = modes.ALL;
+    for(let path in this.nodesMap){
+      this.nodesMap[path].focus();
+    }
+  }
+
+  setDependenciesMode(target){
+    this.mode = modes.DEPENDENCIES;
+    this.target = target;
+    this.focus(target);
+  }
+
+  setBackDependenciesMode(target){
+    this.mode = modes.BACK_DEPENDENCIES;
+    this.target = target;
+
+    this.blur();
+    let view = target.view;
+    view.focus();
+
+    for(let path in this.nodesMap){
+      let node = this.nodesMap[path];
+      if(node.data.localDependencies && node.data.localDependencies.indexOf(view.data.path) !== -1){
+        node.focus();
+      }
+    }
+  }
 }
 
 

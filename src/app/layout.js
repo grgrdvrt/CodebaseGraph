@@ -1,3 +1,5 @@
+//@doc transforms files hierarchy to dot graph
+
 const traversing = require("./traversing");
 const dot = require('graphviz-doc-builder');
 const path = require('path');
@@ -97,9 +99,9 @@ function assignColor(data, colorRange){
 function packageToDot(data){
   let content;
   switch(data.type){
-  case ".js":content = jsFileToDot(data);break;
-  case "dir":content = dirToDot(data);break;
-  default:content = fileToDot(data);break;
+    case ".js":content = jsFileToDot(data);break;
+    case "dir":content = dirToDot(data);break;
+    default:content = fileToDot(data);break;
   }
   return content;
 }
@@ -109,8 +111,8 @@ function fileToDot(data){
   return dot.node(path.basename(data.path), data.path)
     .setAttributes({
       fixedsize:true,
-      width:data.dom.offsetWidth * 1/72,
-      height:data.dom.offsetHeight * 1/72,
+      width:data.view.dom.offsetWidth * 1/72,
+      height:data.view.dom.offsetHeight * 1/72,
       style:"solid",
       shape:"note",
       margin : 0
@@ -167,8 +169,8 @@ function jsFileToDot(data){
   return dot.record([dot.labelCell(path.basename(data.path)), ...classesCells], data.path)
     .setAttributes({
       fixedsize:true,
-      width:data.dom.offsetWidth * 1/72,
-      height:data.dom.offsetHeight * 1/72,
+      width:data.view.dom.offsetWidth * 1/72,
+      height:data.view.dom.offsetHeight * 1/72,
       style:"filled,solid",
       color:hsv,
       fillcolor:data.color,
@@ -190,8 +192,8 @@ function dependenciesToDot(dependencies){
         return dot.node(dep.path, dep.path)
           .setAttributes({
             fixedsize:true,
-            width:dep.dom.offsetWidth * 1/72,
-            height:dep.dom.offsetHeight * 1/72,
+            width:dep.view.dom.offsetWidth * 1/72,
+            height:dep.view.dom.offsetHeight * 1/72,
             shape:"rectangle"});
       }))
     );
@@ -211,7 +213,7 @@ function classToDot(classDeclaration){
 function buildLinks(data, dependencies){
 
   let importsLinks = [];
-  traversing.traverseFiles(data, ".js", file => {
+  traversing.traverseFiles(data, /\.jsx?$/, file => {
     const fileLinks = file.localDependencies.map(to => {
       const from = file.path;
       const constraint = dependencies.indexOf(to) === -1;

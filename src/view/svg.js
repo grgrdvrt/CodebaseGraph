@@ -1,3 +1,5 @@
+//@doc simple abstraction to build svg elements
+
 const svgns = "http://www.w3.org/2000/svg";
 
 class SVGNode{

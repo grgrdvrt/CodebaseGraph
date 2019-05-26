@@ -1,4 +1,4 @@
-//retrieves the files hierarchy
+//@doc retrieves the files hierarchy
 
 const fs = require('fs');
 const path = require('path');
@@ -6,8 +6,9 @@ const path = require('path');
 
 function dir(name, relativePath, absolutePath, children){
   return {
-    type:"dir",
     name:name,
+    isDirectory:true,
+    type:"dir",
     path:relativePath,
     absolutePath:absolutePath,
     children:children
@@ -17,6 +18,7 @@ function dir(name, relativePath, absolutePath, children){
 function file(name, relativePath, absolutePath){
   return {
     name:name,
+    isDirectory:false,
     type:path.extname(relativePath),
     path:relativePath,
     absolutePath:absolutePath

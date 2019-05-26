@@ -7,9 +7,11 @@
   "license": "ISC",
   "dependencies": {
     "command-line-args": "^5.0.2",
-    "electron": "^2.0.2",
-    "esprima": "^4.0.0",
+    "electron": "^4.0.6",
+    "electron-packager": "^13.1.0",
+    "esprima": "^4.0.1",
     "graphviz-doc-builder": "^0.1.0",
+    "open-editor": "^2.0.1",
     "open-in-editor": "^2.2.0"
   },
   "devDependencies": {},

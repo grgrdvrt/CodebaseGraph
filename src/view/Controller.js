@@ -1,3 +1,5 @@
+//@doc manages interactions with mouse and keyboard
+
 const openInEditor = require('open-in-editor');
 const editor = openInEditor.configure({
   // cmd:"/Applications/Emacs.app/Contents/MacOS/Emacs",
@@ -5,6 +7,8 @@ const editor = openInEditor.configure({
 }, function(err) {
   console.error('Something went wrong: ' + err);
 });
+
+// const openEditor = require('open-editor');
 
 
 
@@ -59,14 +63,14 @@ class Controller{
 
   onKeyDown(e){
     switch(e.key){
-      case "Meta":this.enableOpenClick(); break;
+      case "Alt":this.enableOpenClick(); break;
       default:break;
     }
   }
 
   onKeyUp(e){
     switch(e.key){
-      case "Meta":this.disableOpenClick(); break;
+      case "Alt":this.disableOpenClick(); break;
       default:break;
     }
   }
@@ -134,13 +138,15 @@ class Controller{
 
 
   onClick(e){
-    //FIXME hack
+    //FIXME hack to avoid click when stop drag
     if(this.mouseInit.x !== e.clientX || this.mouseInit.y !== e.clientY){
       return;
     }
 
     if(e.target.classList.contains("node")){
-      this.showNode(e.target);
+
+      // this.view.focus(e.target);
+      this.view.localMode(e.target);
     }
     else if(e.target.classList.contains("package")){
       this.showNode(e.target);
@@ -154,6 +160,13 @@ class Controller{
 
       console.log(parentObj.dataset.path + ":" + e.target.dataset.loc);
       editor.open(parentObj.dataset.path + ":" + e.target.dataset.loc);
+      // openEditor([{
+      //   file:parentObj.dataset.path,
+      //   line:e.target.dataset.loc
+      // }]);
+    }
+    else {
+      this.view.setAllMode();
     }
   }
 

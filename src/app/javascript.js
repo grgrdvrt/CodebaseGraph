@@ -4,11 +4,11 @@ const esprima = require('esprima');
 const path = require('path');
 
 
-function jsFileContent(imports, classes, errors){
+function jsFileContent(imports, classes, error = null){
   return {
     imports:imports,
     classes:classes,
-    errors:errors
+    error:error
   };
 }
 
@@ -43,34 +43,34 @@ function parseTypes(items, type, parseFunction){
 
 function getFileContent(fileInfos, src){
   src = src.replace(/static \w* = .*;?\n/g, "")
-    .replace(/(\[[^{()]*)\.\.\./g, "$1")
-    .replace(/({[^[(]*)\.\.\./g, "$1x:")
-    .replace(/(\([^[{]*)\.\.\./g, "$1")
+    .replace(/(\[[^{()]*)\.{3}/g, "$1")
+    .replace(/({[^[(]*)\.{3}/g, "$1x:")
+    .replace(/(\([^[{]*)\.{3}/g, "$1")
     .replace(/@?autobind/g, "")
     .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
     .replace(/export \w* from .*\n/g, "");
 
   //FIXME hack
   src = src.replace(/static \w* = .*;?\n/g, "")
-    .replace(/(\[[^{]*)\.\.\./g, "$1")
-    .replace(/({[^[]*)\.\.\./g, "$1x:")
-    .replace(/(\([^[{]*)\.\.\./g, "$1")
+    .replace(/(\[[^{]*)\.{3}/g, "$1")
+    .replace(/({[^[]*)\.{3}/g, "$1x:")
+    .replace(/(\([^[{]*)\.{3}/g, "$1")
     .replace(/@?autobind/g, "")
     .replace(/export default class (\w*)/g, "export default $1;\nclass $1")
     .replace(/export \w* from .*\n/g, "");
 
   let body;
-  let errors = [];
   try{
-    body = esprima.parseModule(src, {comments:true, loc:true}).body;
+    body = esprima.parseModule(src, {comments:true, loc:true, jsx:true}).body;
   }
   catch(err){
-    errors.push({
+    let error = {
       file: src.split("\n").map((l, i) => i + 1 + "\t" + l).join("\n"),
       path:fileInfos.path,
       err:err,
-    });
-    return jsFileContent([],[], errors);
+    };
+    console.warn(error);
+    return jsFileContent([],[], error);
   }
   const classes = parseTypes(body, 'ClassDeclaration', parseClass);
   const imports = parseTypes(body, 'ImportDeclaration', parseImport)
@@ -79,8 +79,7 @@ function getFileContent(fileInfos, src){
     .reduce((a, i) => a.concat(i), []);
   return jsFileContent(
     [...imports, ...requires],
-    classes,
-    errors
+    classes
   );
 }
 
