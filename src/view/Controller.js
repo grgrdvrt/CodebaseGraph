@@ -2,7 +2,6 @@
 
 const openInEditor = require('open-in-editor');
 const editor = openInEditor.configure({
-  // cmd:"/Applications/Emacs.app/Contents/MacOS/Emacs",
   editor:"code"
 }, function(err) {
   console.error('Something went wrong: ' + err);

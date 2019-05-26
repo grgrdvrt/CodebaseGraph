@@ -3,7 +3,7 @@ A tool to visualize a js codebase
 
 
 # Requirements
-You will need to install [graphviz](http://graphviz.org/) in order to visualize the graph or export it to the format of your choice
+This tool uses [graphviz](http://graphviz.org/), you need to install it separately and make sure it is available as the `dot` command line.
 
 Don't forget to install the dependencies:
 ```
@@ -14,12 +14,8 @@ npm install
 
 
 # usage
-Generate the dot file:
 ```
-node js/index.js /path/to/my/js/codebase/ -o /path/to/result.dot
+npm start
 ```
+`Alt + click` on function or filename to open in editor. The default editor is VSCode, you can change this setting in `src/view/Controller.js`
 
-Export as pdf using dot:
-```
-dot -Tpdf /path/to/result.dot -o /path/to/result.pdf
-```
